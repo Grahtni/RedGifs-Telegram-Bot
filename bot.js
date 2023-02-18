@@ -22,7 +22,7 @@ bot.command("start", async (ctx) => {
 bot.command("help", async (ctx) => {
   await ctx
     .reply(
-      "*@anzubo Project.*\n\n_This bot uses the RedGifs API to download gifs.\nSend a link to a post to try it out._",
+      "*@anzubo Project.*\n\n_This bot uses download gifs from RedGifs.\nSend a link to a post to try it out._",
       { parse_mode: "Markdown" }
     )
     .then(console.log("Help command sent to", ctx.from.id))
