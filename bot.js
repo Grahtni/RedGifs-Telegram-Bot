@@ -41,7 +41,8 @@ bot.on("msg", async (ctx) => {
     const red = url.parse(ctx.msg.text).pathname;
     const id = red.split("/")[2];
     const htm = "red.html";
-    const html = `<div style='position:relative; padding-bottom: 177.63%'><iframe src='https://redgifs.com/ifr/${id}' frameBorder='0' scrolling='no' width='100%' height='100%' style='position:absolute; top:0; left:0;' allowFullScreen></iframe></div><p><a href='https://redgifs.com/watch/${id}'>via RedGIFs</a></p>`;
+    const html = `<iframe src='https://redgifs.com/ifr/${id}' frameborder='0' scrolling='no'  allowfullscreen width='1080' height='1920'></iframe><p><a href='https://redgifs.com/watch/${id}'>via RedGIFs</a></p>`;
+
     fs.writeFileSync(htm, html);
     await ctx.replyWithDocument(new InputFile("red.html"));
     try {
