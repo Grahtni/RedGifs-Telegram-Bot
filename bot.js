@@ -1,8 +1,10 @@
 require("dotenv").config();
 const { Bot, InputFile } = require("grammy");
 const regex = /https?:\/\/(www\.)?redgifs\.com\/watch\/[a-zA-Z]+/g;
-const url = require("url");
+const cheerio = require("cheerio");
+const request = require("request");
 const fs = require("fs");
+const https = require("https");
 
 // Bot
 
@@ -38,19 +40,24 @@ bot.on("msg", async (ctx) => {
       reply_to_message_id: ctx.msg.message_id,
     });
   } else {
-    const red = url.parse(ctx.msg.text).pathname;
-    const id = red.split("/")[2];
-    const htm = "red.html";
-    const html = `<iframe src='https://redgifs.com/ifr/${id}' frameborder='0' scrolling='no'  allowfullscreen width='1080' height='1920'></iframe><p><a href='https://redgifs.com/watch/${id}'>via RedGIFs</a></p>`;
-
-    fs.writeFileSync(htm, html);
-    await ctx.replyWithDocument(new InputFile("red.html"));
-    try {
-      fs.unlinkSync("red.html");
-    } catch (e) {
-      console.error(e.message);
-    }
-    return;
+    request(ctx.msg.text, (error, response, html) => {
+      if (!error && response.statusCode == 200) {
+        const $ = cheerio.load(html);
+        const videoUrl = $('meta[property="og:video"]').attr("content");
+        console.log(videoUrl);
+        https.get(videoUrl, function (res) {
+          const fileName = "video.mp4";
+          const file = fs.createWriteStream(fileName);
+          res.pipe(file);
+          file.on("finish", function () {
+            ctx.replyWithVideo(new InputFile({ url: videoUrl }));
+            fs.unlinkSync("video.mp4");
+            file.close();
+            console.log(`Download complete: ${fileName}`);
+          });
+        });
+      }
+    });
   }
 });
 
