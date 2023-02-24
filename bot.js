@@ -34,30 +34,56 @@ bot.command("help", async (ctx) => {
 // Messages
 
 bot.on("msg", async (ctx) => {
-  if (!regex.test(ctx.msg.text)) {
-    await ctx.reply("*Send a valid RedGifs link.*", {
-      parse_mode: "Markdown",
-      reply_to_message_id: ctx.msg.message_id,
-    });
-  } else {
-    request(ctx.msg.text, (error, response, html) => {
-      if (!error && response.statusCode == 200) {
-        const $ = cheerio.load(html);
-        const videoUrl = $('meta[property="og:video"]').attr("content");
-        console.log(videoUrl);
-        https.get(videoUrl, function (res) {
-          const fileName = "video.mp4";
-          const file = fs.createWriteStream(fileName);
-          res.pipe(file);
-          file.on("finish", function () {
-            ctx.replyWithVideo(new InputFile({ url: videoUrl }));
-            fs.unlinkSync("video.mp4");
-            file.close();
-            console.log(`Download complete: ${fileName}`);
+  console.log("Query:", ctx.msg.text, "sent by", ctx.from.id);
+  try {
+    if (!regex.test(ctx.msg.text)) {
+      await ctx.reply("*Send a valid RedGifs link.*", {
+        parse_mode: "Markdown",
+        reply_to_message_id: ctx.msg.message_id,
+      });
+    } else {
+      request(ctx.msg.text, (error, response, html) => {
+        if (!error && response.statusCode == 200) {
+          const $ = cheerio.load(html);
+          const videoUrl = $('meta[property="og:video"]').attr("content");
+          console.log(videoUrl);
+          request.get(videoUrl).on("response", function (res) {
+            const fileName = "video.mp4";
+            const file = fs.createWriteStream(fileName);
+            res.pipe(file);
+            file.on("finish", function () {
+              ctx.replyWithVideo(new InputFile({ source: fileName }));
+              fs.unlinkSync(fileName);
+              console.log(`Download complete: ${fileName}`);
+            });
           });
-        });
-      }
-    });
+        }
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    await ctx.reply("An error occurred");
+  }
+});
+
+// Error
+
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(
+    "Error while handling update",
+    ctx.update.update_id,
+    "\nQuery:",
+    ctx.msg.text
+  );
+  ctx.reply("An error occurred");
+  const e = err.error;
+  if (e instanceof GrammyError) {
+    console.error("Error in request:", e.description);
+  } else if (e instanceof HttpError) {
+    console.error("Could not contact Telegram:", e);
+  } else {
+    console.error("Unknown error:", e);
   }
 });
 
